@@ -15,15 +15,16 @@ import ru.treshchilin.training.h2jdbcsample.dao.TablePKRepository;
 import ru.treshchilin.training.h2jdbcsample.model.TablePkDescription;
 
 public class TablePKRepoH2Impl implements TablePKRepository {
-	private final String DEFAULT_JDBC_DRIVER = "org.h2.Driver";
+	private static final String DEFAULT_JDBC_DRIVER = "org.h2.Driver";
 
-	private final String SELECT_ALL_FROM_TABLE_LIST = "SELECT * FROM TABLE_LIST";
-//	private final String SELECT_ALL_FROM_TABLE_COLS = "SELECT COLUMN_TYPE FROM TABLE_COLS WHERE TABLE_NAME=? AND lower(COLUMN_NAME)=lower(?)";
+	private static final String SELECT_ALL_FROM_TABLE_LIST = "SELECT * FROM TABLE_LIST";
+	private static final String SELECT_ALL_FROM_TABLE_COLS = "SELECT * FROM TABLE_COLS";
 	
-	private final String TABLE_NAME = "TABLE_NAME";
-	private final String COLUMN_TYPE = "COLUMN_TYPE";
-	private final String PK = "PK";
-	private final String PK_SEP = ",";
+	private static final String TABLE_NAME = "TABLE_NAME";
+	private static final String COLUMN_TYPE = "COLUMN_TYPE";
+	private static final String COLUMN_NAME = "COLUMN_NAME";
+	private static final String PK = "PK";
+	private static final String PK_SEP = ",";
 
 	private Connection connection;
 
@@ -43,20 +44,19 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 
 	@Override
 	public List<TablePkDescription> findAll() throws SQLException{
-		Statement firstStatement = connection.createStatement();
-		Statement secondStatement = connection.createStatement();
+		Statement statement = connection.createStatement();
 		List<TablePkDescription> result = new ArrayList<>();
 		
-		ResultSet tableListRs = firstStatement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
-		ResultSet tablePkType = secondStatement.executeQuery("SELECT * FROM TABLE_COLS");
-		
+		ResultSet tablePkType = statement.executeQuery(SELECT_ALL_FROM_TABLE_COLS);
 		Map<String, String> tablePkToType = new HashMap<>();
 		
 		while (tablePkType.next()) {
 			tablePkToType.put(
-					tablePkType.getString(TABLE_NAME) + ":" + tablePkType.getString("COLUMN_NAME").toLowerCase(),
+					tablePkType.getString(TABLE_NAME) + ":" + tablePkType.getString(COLUMN_NAME).toLowerCase(),
 					tablePkType.getString(COLUMN_TYPE));
 		}
+		
+		ResultSet tableListRs = statement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
 		
 		while (tableListRs.next()) {
 			String tableName = tableListRs.getString(TABLE_NAME);
@@ -69,45 +69,4 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 			
 		return result;
 	}
-	
-//	@Override
-//	public List<TablePkDescription> findAll() throws SQLException {
-//		Statement statement = connection.createStatement();
-//		PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_FROM_TABLE_COLS);
-//		List<TablePkDescription> result = new ArrayList<>();
-//		
-//		ResultSet tableListRs = statement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
-//
-//		while (tableListRs.next()) {
-//			String tableName = tableListRs.getString(TABLE_NAME);
-//			Set<String> pKeys = Arrays.stream(tableListRs.getString(PK).split(PK_SEP)).map(String::strip)
-//					.collect(Collectors.toSet());
-//
-//			preparedStatement.setString(1, tableName);
-//			Map<String, String> pkToType = new HashMap<>();
-//
-//			for (String key : pKeys) {
-//				preparedStatement.setString(2, key);
-//				ResultSet pkTypeRs = preparedStatement.executeQuery();
-//
-//				if (pkTypeRs.next()) {
-//					String pkType = pkTypeRs.getString(COLUMN_TYPE);
-//					pkToType.put(key, pkType);
-//				} else {
-//					pkToType.put(key, "");
-//				}
-//				
-//				pkTypeRs.close();
-//			}
-//			
-//			result.add(new TablePkDescription(tableName, pkToType));
-//		}
-//		
-//		tableListRs.close();
-//		
-//		statement.close();
-//		preparedStatement.close();
-//		
-//		return result;
-//	}
 }
