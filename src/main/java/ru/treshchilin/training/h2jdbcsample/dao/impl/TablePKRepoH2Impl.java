@@ -45,43 +45,77 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 	}
 
 	@Override
-	public List<TablePkDescription> findAll() throws SQLException {
+	public List<TablePkDescription> findAll() throws SQLException{
 		Statement statement = connection.createStatement();
-		PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_FROM_TABLE_COLS);
+//		PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_FROM_TABLE_COLS);
 		List<TablePkDescription> result = new ArrayList<>();
 		
 		ResultSet tableListRs = statement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
-
+		ResultSet tablePkType = statement.executeQuery("SELECT * FROM TABLE_COLS");
+		
+		Map<String, String> tablePkToType = new HashMap<>();
+		
+		while (tablePkType.next()) {
+			tablePkToType.put(
+					tablePkType.getString(TABLE_NAME) + ":" + tablePkType.getString("COLUMN_NAME").toLowerCase(),
+					tablePkType.getString(COLUMN_TYPE));
+		}
+		
 		while (tableListRs.next()) {
 			String tableName = tableListRs.getString(TABLE_NAME);
 			Set<String> pKeys = Arrays.stream(tableListRs.getString(PK).split(PK_SEP)).map(String::strip)
 					.collect(Collectors.toSet());
-
-			preparedStatement.setString(1, tableName);
+			
 			Map<String, String> pkToType = new HashMap<>();
 
 			for (String key : pKeys) {
-				preparedStatement.setString(2, key);
-				ResultSet pkTypeRs = preparedStatement.executeQuery();
-
-				if (pkTypeRs.next()) {
-					String pkType = pkTypeRs.getString(COLUMN_TYPE);
-					pkToType.put(key, pkType);
-				} else {
-					pkToType.put(key, "");
+					pkToType.put(key, tablePkToType.get(tableName+ ":" + key.toLowerCase()));
 				}
-				
-				pkTypeRs.close();
-			}
 			
 			result.add(new TablePkDescription(tableName, pkToType));
-		}
-		
-		tableListRs.close();
-		
-		statement.close();
-		preparedStatement.close();
-		
+			}
+			
 		return result;
-	}
+		}
+	
+//	@Override
+//	public List<TablePkDescription> findAll() throws SQLException {
+//		Statement statement = connection.createStatement();
+//		PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_FROM_TABLE_COLS);
+//		List<TablePkDescription> result = new ArrayList<>();
+//		
+//		ResultSet tableListRs = statement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
+//
+//		while (tableListRs.next()) {
+//			String tableName = tableListRs.getString(TABLE_NAME);
+//			Set<String> pKeys = Arrays.stream(tableListRs.getString(PK).split(PK_SEP)).map(String::strip)
+//					.collect(Collectors.toSet());
+//
+//			preparedStatement.setString(1, tableName);
+//			Map<String, String> pkToType = new HashMap<>();
+//
+//			for (String key : pKeys) {
+//				preparedStatement.setString(2, key);
+//				ResultSet pkTypeRs = preparedStatement.executeQuery();
+//
+//				if (pkTypeRs.next()) {
+//					String pkType = pkTypeRs.getString(COLUMN_TYPE);
+//					pkToType.put(key, pkType);
+//				} else {
+//					pkToType.put(key, "");
+//				}
+//				
+//				pkTypeRs.close();
+//			}
+//			
+//			result.add(new TablePkDescription(tableName, pkToType));
+//		}
+//		
+//		tableListRs.close();
+//		
+//		statement.close();
+//		preparedStatement.close();
+//		
+//		return result;
+//	}
 }
