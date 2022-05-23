@@ -63,15 +63,12 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 		
 		while (tableListRs.next()) {
 			String tableName = tableListRs.getString(TABLE_NAME);
-			Set<String> pKeys = Arrays.stream(tableListRs.getString(PK).split(PK_SEP)).map(String::strip)
-					.collect(Collectors.toSet());
-			
 			Map<String, String> pkToType = new HashMap<>();
-
-			for (String key : pKeys) {
-					pkToType.put(key, tablePkToType.get(tableName+ ":" + key.toLowerCase()));
-				}
-			
+			Arrays.stream(tableListRs.getString(PK).split(PK_SEP))
+					.map(String::strip)
+					.map(key -> pkToType.put(key, tableName+":"+key))
+					.collect(Collectors.toSet());
+						
 			result.add(new TablePkDescription(tableName, pkToType));
 			}
 			
