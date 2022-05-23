@@ -2,7 +2,6 @@ package ru.treshchilin.training.h2jdbcsample.dao.impl;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -11,8 +10,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import ru.treshchilin.training.h2jdbcsample.dao.TablePKRepository;
 import ru.treshchilin.training.h2jdbcsample.model.TablePkDescription;
@@ -21,7 +18,7 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 	private final String DEFAULT_JDBC_DRIVER = "org.h2.Driver";
 
 	private final String SELECT_ALL_FROM_TABLE_LIST = "SELECT * FROM TABLE_LIST";
-	private final String SELECT_ALL_FROM_TABLE_COLS = "SELECT COLUMN_TYPE FROM TABLE_COLS WHERE TABLE_NAME=? AND lower(COLUMN_NAME)=lower(?)";
+//	private final String SELECT_ALL_FROM_TABLE_COLS = "SELECT COLUMN_TYPE FROM TABLE_COLS WHERE TABLE_NAME=? AND lower(COLUMN_NAME)=lower(?)";
 	
 	private final String TABLE_NAME = "TABLE_NAME";
 	private final String COLUMN_TYPE = "COLUMN_TYPE";
@@ -46,12 +43,12 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 
 	@Override
 	public List<TablePkDescription> findAll() throws SQLException{
-		Statement statement = connection.createStatement();
-//		PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_FROM_TABLE_COLS);
+		Statement firstStatement = connection.createStatement();
+		Statement secondStatement = connection.createStatement();
 		List<TablePkDescription> result = new ArrayList<>();
 		
-		ResultSet tableListRs = statement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
-		ResultSet tablePkType = statement.executeQuery("SELECT * FROM TABLE_COLS");
+		ResultSet tableListRs = firstStatement.executeQuery(SELECT_ALL_FROM_TABLE_LIST);
+		ResultSet tablePkType = secondStatement.executeQuery("SELECT * FROM TABLE_COLS");
 		
 		Map<String, String> tablePkToType = new HashMap<>();
 		
@@ -65,15 +62,13 @@ public class TablePKRepoH2Impl implements TablePKRepository {
 			String tableName = tableListRs.getString(TABLE_NAME);
 			Map<String, String> pkToType = new HashMap<>();
 			Arrays.stream(tableListRs.getString(PK).split(PK_SEP))
-					.map(String::strip)
-					.map(key -> pkToType.put(key, tableName+":"+key))
-					.collect(Collectors.toSet());
-						
+					.forEach(key -> pkToType.put(key, tablePkToType.get(tableName+":"+key.toLowerCase())));
+			
 			result.add(new TablePkDescription(tableName, pkToType));
-			}
+		}
 			
 		return result;
-		}
+	}
 	
 //	@Override
 //	public List<TablePkDescription> findAll() throws SQLException {
